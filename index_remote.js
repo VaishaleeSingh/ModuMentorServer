@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 const connectedUsers = new Map();
 
 // Configuration for remote agentic server
-const AGENTIC_SERVER_URL = 'https://backend-python-y57q.onrender.com';
+const AGENTIC_SERVER_URL = process.env.AGENTIC_SERVER_URL || 'https://modumentor-agent.netlify.app';
 const AGENTIC_TIMEOUT = parseInt(process.env.AGENTIC_TIMEOUT) || 30000; // 30 seconds
 
 // Function to call remote agentic server
