@@ -8,19 +8,47 @@ const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
+
+// CORS configuration - allow requests from client URLs (must be defined before Socket.IO and Express CORS)
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : ['http://localhost:3000', 'https://modumentor-client.netlify.app', 'https://modumentor.netlify.app'];
+
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 // Middleware
 app.use(helmet());
 app.use(morgan('combined'));
+
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      // In development, be more permissive
+      if (process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -124,6 +152,23 @@ io.on('connection', (socket) => {
 });
 
 // API Routes
+app.get('/api/config', async (req, res) => {
+  try {
+    // Return project configuration
+    const projectName = process.env.PROJECT_NAME || 'ModuMentor';
+    const projectLogoUrl = process.env.PROJECT_LOGO_URL || '/favicon.ico';
+    const projectFaviconUrl = process.env.PROJECT_FAVICON_URL || '/favicon.ico';
+    
+    res.json({
+      projectName: projectName,
+      projectLogoUrl: projectLogoUrl,
+      projectFaviconUrl: projectFaviconUrl
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get config' });
+  }
+});
+
 app.get('/api/health', async (req, res) => {
   try {
     const agenticHealth = await checkAgenticHealth();
