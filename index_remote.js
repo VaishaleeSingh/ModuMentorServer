@@ -151,6 +151,24 @@ io.on('connection', (socket) => {
   });
 });
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    service: 'ModuMentor Server',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      config: '/api/config',
+      chat: '/api/chat',
+      clear: '/api/clear',
+      help: '/api/help',
+      analyze: '/api/analyze-conversation',
+      tools: '/api/test-tools'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API Routes
 app.get('/api/config', async (req, res) => {
   try {
